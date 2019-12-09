@@ -22,7 +22,7 @@ var app = express();
 app.set('port', process.env.PORT || 3000);
 
 // body-parser를 사용해 application/x-www-form-urlencoded 파싱
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false })); 
 
 // public 폴더를 static으로 오픈
@@ -108,6 +108,43 @@ app.post('/process/login', function(req, res) {
     }
 });
 
+// 사용자 추가 라우팅 함수 - 클라이언트에서 보내온 데이터를 이용해 데이터베이스에 추가
+router.route('/process/adduser').post(function(req, res) {
+    console.log('/process/adduser 호출됨.');
+
+    var paramId = req.body.id || req.query.id;
+    var paramPassword = req.body.password || req.query.password;
+    var paramName = req.body.name || req.query.name;
+
+    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + paramName);
+
+    // 데이터베이스 객체가 초기화된 경우, addUser 함수 호출하며 사용자 추가
+    if(database) {
+        addUser(database, paramId, paramPassword, paramName, function(err, result) {
+            if(err) { throw err; }
+
+            // 결과 객체 확인하여 추가된 데이터 있으면 성공 응답 전송
+            if(result && result.insertedCount > 0) {
+                console.dir(result);
+
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 추가 성공</h2>');
+                res.end();
+            } else {
+                // 결과 객체가 없으면 실패 응답 전송
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 추가 실패</h2>');
+                res.end();
+            }
+        });
+    } else {
+        // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
+        res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+        res.write('<h2>데이터베이스 연결 실패</h2>');
+        res.end();
+    }
+})
+
 // 사용자를 인증하는 함수
 var authUser = function(database, id, password, callback) {
     console.log('authUser 호출됨.');
@@ -132,6 +169,30 @@ var authUser = function(database, id, password, callback) {
     });
 }
 
+// 사용자를 추가하는 함수
+var addUser = function(database, id, password, name, callback) {
+    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
+
+    // users 컬렉션 참조
+    var users = database.collection('users');
+
+    // id, password, username을 사용해 사용자 추가
+    users.insertMany([{"id":id, "password":password, "name":name}], function(err, result) {
+        if(err) {
+            // 오류가 발생했을 때 콜백 함수를 호출하면서 오류 객체 전달
+            callback(err, null);
+            return;
+        }
+
+        // 오류가 아닌 경우, 콜백 함수를 호출하면서 결과 객체 전달
+        if(result.insertedCount > 0) {
+            console.log('사용자 레코드 추가됨 : ' + result.insertedCount);
+        } else {
+            console.log('추가된 레코드가 없음.');
+        }
+        callback(null, result);
+    })
+}
 // 404 오류 페이지 처리
 var errorHandler = expressErrorHandler({
     static: {'404':'./public/404.html'}
