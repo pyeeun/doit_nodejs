@@ -51,30 +51,7 @@ var database;
 var UserSchema;
 
 // 데이터베이스 모델 객체를 위한 변수 선언
-var UserModel = mongoose.Schema({
-    id : {type : String, required : true, unique : true},
-    password : {type : String, required : true},
-    name : {type : String, index : 'hashed'},
-    age : {type : Number, 'default' : -1},
-    created_at : {type : Date, index : {unique : false}, 'default':Date.now},
-    updated_at : {type : Date, index : {unique : false}, 'default':Date.now}
-});
-
-// 스키마에 static 메소드 추가
-UserSchema.static('findById', function(id, callback) {
-    return this.find({id : id}, callback);
-});
-
-UserSchema.static('findAll', function(callback) {
-    return this.find({ }, callback);
-});
-
-console.log('UserSchema 정의함.');
-
-// UserModel 모델 정의
-UserModel = mongoose.model('users2', UserSchema);
-console.log('UserModel 정의함.');
-
+var UserModel;
 
 // 데이터베이스에 연결
 function connectDB() {
@@ -93,12 +70,29 @@ function connectDB() {
 
         // 스키마 정의
         UserSchema = mongoose.Schema({
-            id : String,
-            name : String,
-            password : String
+            id : {type:String, required:true, unique:true},
+            password : {type:String, required:true},
+            name : {type:String, index:'hashed'},
+            age : {type:Number, 'default':-1},
+            created_at : {type:Date, index:{unique:false}, 'default':Date.now},
+            updated_at : {type:Date, index:{unique:false}, 'default':Date.now}
         });
         console.log('UserSchema 정의함.');
     });
+
+    // 스키마에 static 메소드 추가[]
+    UserSchema.static('findById', function(id, callback) {
+        return this.find({id:id}, callback);
+    });
+
+    UserSchema.static('findAll', function(callback) {
+        return this.find({}, callback);
+    });
+    console.log('UserSchema 정의함.');
+
+    // UserModel 모델 정의
+    UserModel = mongoose.model('users2', UserSchema);
+    console.log('UserModel 정의함.');
 
     // 연결 끊어졌을 때 5초 후 재연결
     database.on('disconnected', function() {
@@ -109,11 +103,6 @@ function connectDB() {
 
 // 라우터 객체 참조
 var router = express.Router();
-/*
-// 로그인 라우팅 함수 - 데이터베이스 정보와 비교
-router.route('/process/login').post(function(req, res) {
-    console.log('/process/login 호출됨.');
-});**/
 
 // 라우터 객체 등록
 app.use('/', router);
@@ -271,7 +260,7 @@ var authUser = function(database, id, password, callback) {
             console.log('아이디와 일치하는 사용자를 찾지 못함.');
             callback(null, null);
         }
-    })
+    });
 }
 
 // 사용자를 추가하는 함수
@@ -291,9 +280,6 @@ var addUser = function(database, id, password, name, callback) {
         callback(null, user);
     })
 }
-
-
-
 // 404 오류 페이지 처리
 var errorHandler = expressErrorHandler({
     static: {'404':'./public/404.html'}
