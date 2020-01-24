@@ -75,13 +75,13 @@ function connectDB() {
         // UserModel 모델 정의
         UserModel = mongoose.model('users', UserSchema);
         console.log('UserModel 정의함.');
+    });
 
-        // 연결 끊어졌을 때 5초 후 재연결
-        database.on('disconnected', function() {
-            console.log('연결이 끊어졌습니다. 5초 후 다시 연결합니다.');
-            setInterval(connectDB, 5000);
-        });
-    })
+    // 연결 끊어졌을 때 5초 후 재연결
+    database.on('disconnected', function() {
+        console.log('연결이 끊어졌습니다. 5초 후 다시 연결합니다.');
+        setInterval(connectDB, 5000);
+    });
 }
 
 // 사용자를 인증하는 함수
